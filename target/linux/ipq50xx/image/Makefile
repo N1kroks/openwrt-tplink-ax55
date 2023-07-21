@@ -47,4 +47,21 @@ define Device/redmi_ax3000
 endef
 TARGET_DEVICES += redmi_ax3000
 
+define Device/tplink_ax55
+  $(call Device/FitImage)
+  $(call Device/UbiFit)
+  SOC := ipq5000
+  DEVICE_VENDOR := TP-Link
+  DEVICE_MODEL := AX55
+  BLOCKSIZE := 128k
+  PAGESIZE := 2048
+  DEVICE_DTS_CONFIG := ipq5000-ax55
+  IMAGES := nand-factory.ubi
+  DEVICE_PACKAGES := \
+	ATH11K_MEM_PROFILE_512M ath11k-firmware-ipq5018 \
+	ath11k-firmware-qcn6122 kmod-switch-rtl8366-smi \
+	kmod-switch-rtl8367b kmod-leds-gpio
+endef
+TARGET_DEVICES += tplink_ax55
+
 $(eval $(call BuildImage))
