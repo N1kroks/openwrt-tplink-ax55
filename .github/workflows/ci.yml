@@ -39,7 +39,7 @@ jobs:
           cat <<EOF | sed -E 's/^  //' >.config
             CONFIG_TARGET_ipq50xx=y
             CONFIG_TARGET_ipq50xx_arm=y
-            CONFIG_TARGET_ipq50xx_arm_DEVICE_redmi_ax3000=y
+            CONFIG_TARGET_ipq50xx_arm_DEVICE_tplink_ax55=y
 
             CONFIG_IB=y
             # CONFIG_IB_STANDALONE is not set
