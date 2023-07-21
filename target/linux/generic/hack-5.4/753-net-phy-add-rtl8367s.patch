@@ -1,7 +1,7 @@
-diff --git a/target/linux/generic/files/drivers/net/phy/rtl8366_smi.c b/target/linux/generic/files/drivers/net/phy/rtl8366_smi.c
+diff --git a/drivers/net/phy/rtl8366_smi.c b/drivers/net/phy/rtl8366_smi.c
 index e8375e5147..5fd8b8f4d1 100644
---- a/target/linux/generic/files/drivers/net/phy/rtl8366_smi.c
-+++ b/target/linux/generic/files/drivers/net/phy/rtl8366_smi.c
+--- a/drivers/net/phy/rtl8366_smi.c
++++ b/drivers/net/phy/rtl8366_smi.c
 @@ -256,7 +256,7 @@ static int __rtl8366_smi_read_reg(struct rtl8366_smi *smi, u32 addr, u32 *data)
  
  int __rtl8366_mdio_read_reg(struct rtl8366_smi *smi, u32 addr, u32 *data)
@@ -16,14 +16,27 @@ index e8375e5147..5fd8b8f4d1 100644
  static int __rtl8366_mdio_write_reg(struct rtl8366_smi *smi, u32 addr, u32 data)
  {
 -	u32 phy_id = MDC_REALTEK_PHY_ADDR;
-+	u32 phy_id = smi->phy_id ? smi->phy_id MDC_REALTEK_PHY_ADDR;
++	u32 phy_id = smi->phy_id ? smi->phy_id : MDC_REALTEK_PHY_ADDR;
  	struct mii_bus *mbus = smi->ext_mbus;
  
  	BUG_ON(in_interrupt());
-diff --git a/target/linux/generic/files/drivers/net/phy/rtl8366_smi.h b/target/linux/generic/files/drivers/net/phy/rtl8366_smi.h
+@@ -1550,6 +1550,12 @@ int rtl8366_smi_probe_of(struct platform_device *pdev, struct rtl8366_smi *smi)
+ 		goto try_gpio;
+ 	}
+ 
++	of_property_read_u32(np, "phy_id", &smi->phy_id);
++	if(smi->phy_id < 0) {
++		smi->phy_id = MDC_REALTEK_PHY_ADDR;
++	}
++	dev_info(&pdev->dev, "switch phy addr=%d\n", smi->phy_id);
++
+ 	return 0;
+ 
+ try_gpio:
+diff --git a/drivers/net/phy/rtl8366_smi.h b/drivers/net/phy/rtl8366_smi.h
 index d1d988a372..4ed574cf10 100644
---- a/target/linux/generic/files/drivers/net/phy/rtl8366_smi.h
-+++ b/target/linux/generic/files/drivers/net/phy/rtl8366_smi.h
+--- a/drivers/net/phy/rtl8366_smi.h
++++ b/drivers/net/phy/rtl8366_smi.h
 @@ -64,6 +64,7 @@ struct rtl8366_smi {
  	u8			dbg_vlan_4k_page;
  #endif
@@ -32,10 +45,10 @@ index d1d988a372..4ed574cf10 100644
  };
  
  struct rtl8366_vlan_mc {
-diff --git a/target/linux/generic/files/drivers/net/phy/rtl8367b.c b/target/linux/generic/files/drivers/net/phy/rtl8367b.c
-index 3599791a51..6efc624928 100644
---- a/target/linux/generic/files/drivers/net/phy/rtl8367b.c
-+++ b/target/linux/generic/files/drivers/net/phy/rtl8367b.c
+diff --git a/drivers/net/phy/rtl8367b.c b/drivers/net/phy/rtl8367b.c
+index 3599791..bd7d3b6 100644
+--- a/drivers/net/phy/rtl8367b.c
++++ b/drivers/net/phy/rtl8367b.c
 @@ -213,6 +213,22 @@
  #define RTL8367B_RTL_MAGIC_ID_REG		0x13c2
  #define   RTL8367B_RTL_MAGIC_ID_VAL		0x0249
@@ -303,22 +316,22 @@ index 3599791a51..6efc624928 100644
  	mask = (RTL8367B_DI_FORCE_MODE |
  		RTL8367B_DI_FORCE_NWAY |
  		RTL8367B_DI_FORCE_TXPAUSE |
-@@ -906,6 +1054,15 @@ static int rtl8367b_extif_init(struct rtl8366_smi *smi, int id,
- 	if (err)
- 		return err;
- 
-+	if (of_device_is_compatible(smi->parent->of_node,
-+                                "realtek,rtl8367s")) {
-+	    /* disable pre-emphasis */
-+	    REG_WR(smi, RTL8367S_SDS_INDACS_DATA_REG, 0x28A0);
-+	    REG_WR(smi, RTL8367S_SDS_INDACS_ADDR_REG, 0x0482);
-+	    REG_WR(smi, RTL8367S_SDS_INDACS_CMD_REG,
-+	                    RTL8367S_SDS_CMD | RTL8367S_SDS_RWOP);
-+	}
-+
- 	if (mode != RTL8367_EXTIF_MODE_DISABLED) {
- 		err = rtl8367b_extif_set_force(smi, id, &cfg->ability);
+@@ -915,6 +1063,15 @@ static int rtl8367b_extif_init(struct rtl8366_smi *smi, int id,
+ 						     cfg->rxdelay);
  		if (err)
+ 			return err;
++
++		if (of_device_is_compatible(smi->parent->of_node,
++                                "realtek,rtl8367s")) {
++		    /* disable pre-emphasis */
++		    REG_WR(smi, RTL8367S_SDS_INDACS_DATA_REG, 0x28A0);
++		    REG_WR(smi, RTL8367S_SDS_INDACS_ADDR_REG, 0x0482);
++		    REG_WR(smi, RTL8367S_SDS_INDACS_CMD_REG,
++		                    RTL8367S_SDS_CMD | RTL8367S_SDS_RWOP);
++		}
+ 	}
+ 
+ 	return 0;
 @@ -925,6 +1082,7 @@ static int rtl8367b_extif_init_of(struct rtl8366_smi *smi, int id,
  				  const char *name)
  {
@@ -482,10 +495,10 @@ index 3599791a51..6efc624928 100644
  	{},
  };
  MODULE_DEVICE_TABLE(of, rtl8367b_match);
-diff --git a/target/linux/generic/files/include/linux/rtl8367.h b/target/linux/generic/files/include/linux/rtl8367.h
+diff --git a/include/linux/rtl8367.h b/include/linux/rtl8367.h
 index 14150393e2..8b1eb68ad4 100644
---- a/target/linux/generic/files/include/linux/rtl8367.h
-+++ b/target/linux/generic/files/include/linux/rtl8367.h
+--- a/include/linux/rtl8367.h
++++ b/include/linux/rtl8367.h
 @@ -18,6 +18,8 @@ enum rtl8367_port_speed {
  	RTL8367_PORT_SPEED_10 = 0,
  	RTL8367_PORT_SPEED_100,
